@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_auth/Screens/NotTodo/not_todo_screen.dart';
 import 'package:flutter_auth/services/not_todos_provider.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/firebase_auth_methods.dart';
@@ -29,18 +31,31 @@ class UserDetail extends StatefulWidget {
 }
 
 class _UserDetailState extends State<UserDetail> {
-  Future<void> addNotTodo() async {
+  final notTodoController = TextEditingController();
+
+  Future<void> getAIResponse() async {
+    final gemini = Gemini.instance;
+
+    final response = await gemini
+        .text("Write a proper todo for this: ${notTodoController.text}");
+    if (response != null && response.output != null) {
+      await addNotTodo(response!.output ?? "");
+    }
+  }
+
+  Future<void> addNotTodo(String text) async {
     var db = FirebaseFirestore.instance;
     var user = context.read<FirebaseAuthMethods>().user;
 
     final notTodo = <String, dynamic>{
       "email": user?.email,
-      "title": "testkrm",
+      "title": text,
       "description": "descriptionkkk"
     };
     final result = await db.collection("not_todos").add(notTodo);
     if (result.id.isNotEmpty) {
       context.read<NotTodosProvider>().getNotTodos();
+      Navigator.of(context).pop();
     }
   }
 
@@ -63,7 +78,43 @@ class _UserDetailState extends State<UserDetail> {
           children: [
             Text(user?.email ?? ""),
             IconButton(
-              onPressed: addNotTodo,
+              onPressed: () async {
+                await showDialog<void>(
+                  context: context,
+                  builder: (context) => Material(
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -40,
+                          top: -40,
+                          child: InkResponse(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const CircleAvatar(
+                              backgroundColor: Colors.red,
+                              child: Icon(Icons.close),
+                            ),
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            const Text("Type "),
+                            TextField(
+                              controller: notTodoController,
+                            ),
+                            TextButton(
+                              onPressed: getAIResponse,
+                              child: const Text("Submit"),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
               icon: const Icon(Icons.add),
             ),
             Expanded(

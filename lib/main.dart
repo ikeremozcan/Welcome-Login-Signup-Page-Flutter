@@ -6,7 +6,9 @@ import 'package:flutter_auth/Screens/Welcome/welcome_screen.dart';
 import 'package:flutter_auth/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 import 'services/firebase_auth_methods.dart';
@@ -16,6 +18,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await dotenv.load(fileName: "keys.env"); // Replace with your .env file path
+  String apiKey = dotenv.env['GEMINI_API_KEY']!;
+
+  Gemini.init(apiKey: apiKey);
+
   runApp(const MyApp());
 }
 
